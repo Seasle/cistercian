@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, memo } from 'react';
 import {
   GLYPH_OFFSET,
   GLYPH_SCALE,
@@ -13,7 +13,7 @@ export interface GlyphProps {
   showNumber?: boolean;
 }
 
-export const Glyph = ({ number, layout, showNumber }: GlyphProps) => {
+export const Glyph = memo(({ number, layout, showNumber }: GlyphProps) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   useEffect(() => {
@@ -26,20 +26,25 @@ export const Glyph = ({ number, layout, showNumber }: GlyphProps) => {
       return;
     }
 
-    context.clearRect(0, 0, context.canvas.width, context.canvas.height);
-    context.save();
-    context.translate(GLYPH_OFFSET * GLYPH_SCALE, GLYPH_OFFSET * GLYPH_SCALE);
+    context.canvas.width = GLYPH_ACTUAL_WIDTH;
+    context.canvas.height = GLYPH_ACTUAL_HEIGHT;
+
     for (const line of layout) {
       const [xStart, xEnd] = line.x;
       const [yStart, yEnd] = line.y;
 
-      context.moveTo(xStart * GLYPH_SCALE, yStart * GLYPH_SCALE);
-      context.lineTo(xEnd * GLYPH_SCALE, yEnd * GLYPH_SCALE);
+      context.moveTo(
+        (GLYPH_OFFSET + xStart) * GLYPH_SCALE,
+        (GLYPH_OFFSET + yStart) * GLYPH_SCALE,
+      );
+      context.lineTo(
+        (GLYPH_OFFSET + xEnd) * GLYPH_SCALE,
+        (GLYPH_OFFSET + yEnd) * GLYPH_SCALE,
+      );
     }
     context.lineWidth = 2;
     context.lineCap = 'round';
     context.stroke();
-    context.restore();
 
     if (showNumber) {
       context.textAlign = 'center';
@@ -51,11 +56,7 @@ export const Glyph = ({ number, layout, showNumber }: GlyphProps) => {
     }
   }, [number, layout, showNumber]);
 
-  return (
-    <canvas
-      width={GLYPH_ACTUAL_WIDTH}
-      height={GLYPH_ACTUAL_HEIGHT}
-      ref={canvasRef}
-    />
-  );
-};
+  return <canvas ref={canvasRef} />;
+});
+
+Glyph.displayName = 'Glyph';
