@@ -1,29 +1,17 @@
-import { useState, useEffect } from 'react';
+import { GlyphsLoader } from '@/components/common/GlyphsLoader';
 import { Grid } from '@/components/lib/Grid';
 import { Glyph } from '@/components/lib/Glyph';
-import { getGlyphs } from '@/api';
-import { parseSchema } from '@/utils/parser';
-import type { ParsedGlyph } from '@/types/glyph';
+import { range } from '@/utils/collection';
+import { GLYPH_MIN_NUMBER, GLYPH_MAX_NUMBER } from '@/constants/glyph';
 
 export const App = () => {
-  const [glyphs, setGlyphs] = useState<ParsedGlyph[]>([]);
-
-  useEffect(() => {
-    getGlyphs()
-      .then(parseSchema)
-      .then((parsedGlyphs) => setGlyphs(parsedGlyphs));
-  }, []);
-
   return (
-    <Grid>
-      {glyphs.map((glyph) => (
-        <Glyph
-          number={glyph.number}
-          layout={glyph.layout}
-          showNumber
-          key={glyph.number}
-        />
-      ))}
-    </Grid>
+    <GlyphsLoader>
+      <Grid>
+        {range(GLYPH_MIN_NUMBER, GLYPH_MAX_NUMBER + 1, 9).map((number) => (
+          <Glyph number={number} showNumber key={number} />
+        ))}
+      </Grid>
+    </GlyphsLoader>
   );
 };

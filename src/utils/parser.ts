@@ -14,15 +14,15 @@ export const parseRange = (range: string): [number, number] => {
   return [parts[0], parts[1]];
 };
 
-export const parseSchema = (schema: RawGlyph[]): ParsedGlyph[] =>
-  schema.map((entry) => {
-    const layout = entry.layout.map((range) => ({
+export const parseGlyphs = (glyphs: RawGlyph[]): ParsedGlyph[] =>
+  glyphs.map((glyph) => {
+    const layout = glyph.layout.map((range) => ({
       x: parseRange(range.x),
       y: parseRange(range.y),
     }));
 
     return {
-      number: entry.number,
+      number: glyph.number,
       layout,
     };
   });
