@@ -1,4 +1,4 @@
-import { useState, useEffect, PropsWithChildren } from 'react';
+import { useState, useEffect, type PropsWithChildren } from 'react';
 import { Glyphs } from '@/contexts/Glyph';
 import { getGlyphs } from '@/api';
 import { parseGlyphs } from '@/utils/parser';
@@ -13,10 +13,7 @@ export const GlyphsLoader = ({ children }: PropsWithChildren) => {
       .then((parsedGlyphs) =>
         setGlyphs(
           parsedGlyphs.reduce<Map<number, ParsedGlyph>>(
-            (accumulator, glyph) => {
-              accumulator.set(glyph.number, glyph);
-              return accumulator;
-            },
+            (accumulator, glyph) => accumulator.set(glyph.number, glyph),
             new Map(),
           ),
         ),
