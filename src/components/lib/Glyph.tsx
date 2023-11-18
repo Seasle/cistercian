@@ -1,10 +1,10 @@
 import { useEffect, useRef, memo } from 'react';
 import { useGlyph } from '@/hooks/use-glyph';
 import {
+  GLYPH_WIDTH,
+  GLYPH_HEIGHT,
   GLYPH_OFFSET,
   GLYPH_SCALE,
-  GLYPH_ACTUAL_WIDTH,
-  GLYPH_ACTUAL_HEIGHT,
   GLYPH_MAX_NUMBER,
 } from '@/constants/glyph';
 import type { ParsedGlyph } from '@/types/glyph';
@@ -12,68 +12,95 @@ import type { ParsedGlyph } from '@/types/glyph';
 export interface GlyphProps {
   number: ParsedGlyph['number'];
   showNumber?: boolean;
+  withoutOffset?: boolean;
 }
 
-export const Glyph = memo(({ number, showNumber }: GlyphProps) => {
-  const glyphs = useGlyph(number);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+const lineWidth = 2;
 
-  useEffect(() => {
-    if (canvasRef.current === null) {
-      return;
-    }
+const getGlyphSize = (withOffset = true) => {
+  const offset = withOffset ? GLYPH_OFFSET : 0;
+  const gap = withOffset ? 0 : lineWidth / 2;
 
-    const context = canvasRef.current.getContext('2d');
-    if (context === null) {
-      return;
-    }
+  return {
+    width: (GLYPH_WIDTH + offset * 2) * GLYPH_SCALE + gap * 2,
+    height: (GLYPH_HEIGHT + offset * 2) * GLYPH_SCALE + gap * 2,
+    offset,
+    gap,
+  };
+};
 
-    context.canvas.width = GLYPH_ACTUAL_WIDTH;
-    context.canvas.height = GLYPH_ACTUAL_HEIGHT;
+export const Glyph = memo(
+  ({ number, showNumber = false, withoutOffset = false }: GlyphProps) => {
+    const glyphs = useGlyph(number);
+    const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
-    if (glyphs.length === 0) {
-      context.strokeRect(0, 0, context.canvas.width, context.canvas.height);
-      context.textAlign = 'center';
-      context.textBaseline = 'middle';
-      context.fillText(
-        'Glyph not found',
-        GLYPH_ACTUAL_WIDTH / 2,
-        GLYPH_ACTUAL_HEIGHT / 2,
-      );
+    useEffect(() => {
+      if (canvasRef.current === null) {
+        return;
+      }
 
-      return;
-    }
+      const context = canvasRef.current.getContext('2d');
+      if (context === null) {
+        return;
+      }
 
-    for (const glyph of glyphs) {
-      for (const line of glyph.layout) {
-        const [xStart, xEnd] = line.x;
-        const [yStart, yEnd] = line.y;
+      const { width, height, offset, gap } = getGlyphSize(!withoutOffset);
 
-        context.moveTo(
-          (GLYPH_OFFSET + xStart) * GLYPH_SCALE,
-          (GLYPH_OFFSET + yStart) * GLYPH_SCALE,
-        );
-        context.lineTo(
-          (GLYPH_OFFSET + xEnd) * GLYPH_SCALE,
-          (GLYPH_OFFSET + yEnd) * GLYPH_SCALE,
+      context.canvas.width = width;
+      context.canvas.height = height;
+
+      context.save();
+      context.translate(gap, gap);
+
+      if (glyphs.length === 0) {
+        context.strokeRect(0, 0, context.canvas.width, context.canvas.height);
+        context.textAlign = 'center';
+        context.textBaseline = 'middle';
+
+        if (withoutOffset) {
+          context.fillText('Glyph', width / 2, height / 2 - 10);
+          context.fillText('not', width / 2, height / 2);
+          context.fillText('found', width / 2, height / 2 + 10);
+        } else {
+          context.fillText('Glyph not found', width / 2, height / 2);
+        }
+
+        return;
+      }
+
+      for (const glyph of glyphs) {
+        for (const line of glyph.layout) {
+          const [xStart, xEnd] = line.x;
+          const [yStart, yEnd] = line.y;
+
+          context.moveTo(
+            (offset + xStart) * GLYPH_SCALE,
+            (offset + yStart) * GLYPH_SCALE,
+          );
+          context.lineTo(
+            (offset + xEnd) * GLYPH_SCALE,
+            (offset + yEnd) * GLYPH_SCALE,
+          );
+        }
+        context.lineWidth = lineWidth;
+        context.lineCap = 'round';
+        context.stroke();
+      }
+
+      if (showNumber) {
+        context.textAlign = 'center';
+        context.fillText(
+          Math.min(number, GLYPH_MAX_NUMBER).toString(),
+          width / 2,
+          height - 5,
         );
       }
-      context.lineWidth = 2;
-      context.lineCap = 'round';
-      context.stroke();
-    }
 
-    if (showNumber) {
-      context.textAlign = 'center';
-      context.fillText(
-        Math.min(number, GLYPH_MAX_NUMBER).toString(),
-        GLYPH_ACTUAL_WIDTH / 2,
-        GLYPH_ACTUAL_HEIGHT - 5,
-      );
-    }
-  }, [number, glyphs, showNumber]);
+      context.restore();
+    }, [glyphs, number, showNumber, withoutOffset]);
 
-  return <canvas ref={canvasRef} />;
-});
+    return <canvas ref={canvasRef} />;
+  },
+);
 
 Glyph.displayName = 'Glyph';
